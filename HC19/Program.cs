@@ -54,15 +54,17 @@ namespace HC19
 		public List<Img> Imgs;
 	}
 
-	readonly struct Img
+	public class Img
 	{
-		public readonly bool H;
-		public readonly int[] Tags;
+		public bool H;
+		public int[] Tags;
 
 		public Img(bool h, int[] tags)
 		{
 			H = h;
 			Tags = tags;
 		}
+
+		public override string ToString() => (H ? "H" : "V") + " " + string.Join(",", Tags);
 	}
 }

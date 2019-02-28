@@ -8,7 +8,7 @@ namespace HC19
 {
 	internal class Program
 	{
-		private static string[] files = new[] { "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt", };
+		private static string[] files = new[] { "a_example.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt", };
 
 		private static void Main(string[] args)
 		{
@@ -76,7 +76,7 @@ namespace HC19
 							bestImage = otherImg;
 						}
 
-						if (bestKeyPoints >= (key / 2) || i > 500)
+						if (bestKeyPoints >= (key / 2) || i > 200)
 						{
 							break;
 						}

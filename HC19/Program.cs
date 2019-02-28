@@ -8,7 +8,8 @@ namespace HC19
 {
 	internal class Program
 	{
-		private static string[] files = new[] { "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt", };
+		// "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt",
+		private static string[] files = new[] {  "e_shiny_selfies.txt", };
 
 		private static void Main(string[] args)
 		{
@@ -17,7 +18,7 @@ namespace HC19
 				Console.WriteLine("Doing: " + file);
 				Data data = ProcessFile("../../../../Input/" + file);
 
-				Do(data, file);
+				Bogo(data, file);
 
 				WriteResult(data, file);
 			}
@@ -35,6 +36,100 @@ namespace HC19
 				score += d.Imgs[i].PointsWith(d.Imgs[i + 1]);
 			}
 			Console.WriteLine($"Score: {score}");
+		}
+
+		public static void Bogo(Data d, string file)
+		{
+			Util.UnionVerticalImages(d, file);
+			Console.WriteLine("Vertical images combined");
+
+			var score = new (int l, int r)[d.Imgs.Count];
+			int scoreSum = 0;
+			for (int i = 0; i < d.Imgs.Count - 1; i++)
+			{
+				var (a, b, c) = STrip(d, i);
+				score[i] = STrip(a, b, c);
+				scoreSum += score[i].l + score[i].r;
+			}
+
+			int mod = 0;
+
+			var rnd = new Random();
+			while (true)
+			{
+				int select = rnd.Next(0, d.Imgs.Count);
+				int other;
+				do
+				{
+					other = rnd.Next(0, d.Imgs.Count);
+				} while (select == other);
+
+
+				var (s1, s2, s3) = STrip(d, select);
+				var (o1, o2, o3) = STrip(d, other);
+
+				var sn = STrip(s1, o2, s3);
+				var on = STrip(o1, s2, o3);
+				var swap = sn.l + sn.r + on.l + on.r;
+				var cur = score[select].l + score[select].r + score[other].l + score[other].r;
+				if (swap > cur)
+				{
+					var tmp = d.Imgs[select];
+					d.Imgs[select] = d.Imgs[other];
+					d.Imgs[other] = tmp;
+
+					Set(score, select, sn);
+					Set(score, other, on);
+
+					scoreSum -= cur;
+					scoreSum += swap;
+
+					Console.WriteLine("Score:" + scoreSum);
+
+					if (++mod % 10000 == 0 )
+					{
+						mod = 0;
+						Console.WriteLine("Write");
+						WriteResult(d, file);
+					}
+				}
+			}
+		}
+
+		public static void Set((int l, int r)[] score, int i, (int l, int r) val)
+		{
+			score[i] = val;
+			if (i > 0)
+			{
+				score[i - 1] = (score[i - 1].l, val.l);
+			}
+			if (i < score.Length - 1)
+			{
+				score[i + 1] = (val.r, score[i + 1].l);
+			}
+		}
+
+		public static (Img, Img, Img) STrip(Data d, int i)
+		{
+			if (i == 0)
+				return (null, d.Imgs[i], d.Imgs[i + 1]);
+			else if (i == d.Imgs.Count - 1)
+				return (d.Imgs[i - 1], d.Imgs[i], null);
+			return (d.Imgs[i - 1], d.Imgs[i], d.Imgs[i + 1]);
+		}
+
+		public static (int l, int r) STrip(Img a, Img b, Img c)
+		{
+			int l = 0, r = 0;
+			if (a != null)
+			{
+				l = a.PointsWith(b);
+			}
+			if (c != null)
+			{
+				r = b.PointsWith(c);
+			}
+			return (l, r);
 		}
 
 		private static void ArrangeSlides(Data d)
@@ -55,7 +150,7 @@ namespace HC19
 				}
 				else
 				{
-					currentImg = leftFromLastGroup;					
+					currentImg = leftFromLastGroup;
 				}
 
 				while (imgGroup.Count > 1)

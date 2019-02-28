@@ -42,7 +42,7 @@ namespace HC19
 		{
 			List<Img> slides = new List<Img>();
 			var groupedImages = d.Imgs.GroupBy(img => img.Tags.Count).ToList();
-			groupedImages.Sort((g1, g2) => g1.Key - g2.Key);
+			groupedImages.Sort((g1, g2) => g2.Key - g1.Key);
 
 			Img leftFromLastGroup = null;
 			var groupedList = groupedImages.Select(x => (x.Key, x.ToList())).ToArray();
@@ -76,9 +76,9 @@ namespace HC19
 							bestImage = otherImg;
 						}
 
-						if (bestKeyPoints >= (key / 2) - 8)
+						if (bestKeyPoints >= (key / 2) || i > 500)
 						{
-							break;																												
+							break;
 						}
 					}
 

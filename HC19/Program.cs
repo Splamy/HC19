@@ -26,7 +26,8 @@ namespace HC19
 		public static void Do(Data d, string file)
 		{
 			Util.UnionVerticalImages(d, file);
-			d.Imgs.Sort((i, j) => i.Tags.Length - j.Tags.Length);
+			Console.WriteLine("Vertical images combined");
+			ArrangeSlides(d);
 
 			int score = 0;
 			for (int i = 0; i < d.Imgs.Count - 1; i++)
@@ -39,17 +40,62 @@ namespace HC19
 		private static void ArrangeSlides(Data d)
 		{
 			List<Img> slides = new List<Img>();
-			var groupedImages = d.Imgs.GroupBy(img => img.Tags.Length).ToList();
+			var groupedImages = d.Imgs.GroupBy(img => img.Tags.Count).ToList();
 			groupedImages.Sort((g1, g2) => g1.Key - g2.Key);
 
-			Img leftFromLastGroup = null;			
-			foreach (IGrouping<int, Img> imgGroup in groupedImages)
+			Img leftFromLastGroup = null;
+			var groupedList = groupedImages.Select(x => (x.Key, x.ToList())).ToArray();
+			foreach (var (key, imgGroup) in groupedList)
 			{
-				Img currentImg = imgGroup.First();
-				// find image that has at least key / 2
-				int bestKeyCount = 0;
-				
-			}			
+				Img currentImg = null;
+				if (leftFromLastGroup == null)
+				{
+					currentImg = imgGroup.Last();
+					imgGroup.RemoveAt(imgGroup.Count - 1);
+				}
+				else
+				{
+					currentImg = leftFromLastGroup;					
+				}
+
+				while (imgGroup.Count > 1)
+				{
+					// find image that has at least key / 2
+					int bestKeyPoints = 0;
+					int bestImageIndex = 0;
+					Img bestImage = null;
+					foreach (var (i, otherImg) in imgGroup.Select((i, j) => (j, i)))
+					{
+						int points = currentImg.PointsWith(otherImg);
+						if (points > bestKeyPoints)
+						{
+							bestKeyPoints = points;
+							bestImageIndex = i;
+							bestImage = otherImg;
+						}
+					}
+
+					slides.Add(currentImg);
+					imgGroup.RemoveAt(bestImageIndex);
+					currentImg = bestImage;
+				}
+
+				// only one image from group should be left here
+				if (imgGroup.Count == 1)
+				{
+					leftFromLastGroup = imgGroup[0];
+				}
+				else
+				{
+					leftFromLastGroup = currentImg;
+				}
+			}
+
+			if (leftFromLastGroup != null)
+			{
+				slides.Add(leftFromLastGroup);
+			}
+			d.Imgs = slides;
 		}
 
 		private static void WriteResult(Data d, string file)
@@ -95,7 +141,7 @@ namespace HC19
 					}
 
 					Array.Sort(itags);
-					data.Add(new Img(i, split[0] == "H", itags));
+					data.Add(new Img(i, split[0] == "H", new HashSet<int>(itags)));
 				}
 
 				return new Data() { Imgs = data };
@@ -112,9 +158,9 @@ namespace HC19
 	{
 		public int Id;
 		public bool H;
-		public int[] Tags;
+		public HashSet<int> Tags;
 
-		public Img(int id, bool h, int[] tags)
+		public Img(int id, bool h, HashSet<int> tags)
 		{
 			Id = id;
 			H = h;
@@ -127,63 +173,13 @@ namespace HC19
 
 		public int PointsWith(Img i)
 		{
-			int common = 0;
-			int only1 = 0;
-			int only2 = 0;
+			var intersection = Tags.Intersect(i.Tags).Count();
 
-			int i1 = 0;
-			int i2 = 0;
-			while (i1 < Tags.Length && i2 < i.Tags.Length)
-			{
-				if (Tags[i1] == i.Tags[i2])
-				{
-					common++;
-					i1++;
-					i2++;
-				}
-				else if (Tags[i1] < i.Tags[i2])
-				{
-					only1++;
-					i1++;
-				}
-				else// if (Tags[i1] > i.Tags[i2])
-				{
-					only2++;
-					i2++;
-				}
-			}
-			only1 += Tags.Length - i1;
-			only2 += i.Tags.Length - i2;
+			int common = intersection;
+			int only1 = Tags.Count - common;
+			int only2 = i.Tags.Count - common;
 
 			return Math.Min(Math.Min(common, only1), only2);
-		}
-
-		public static int[] TagUnion(int[] a, int[] b)
-		{
-			var res = new List<int>();
-			int i1 = 0;
-			int i2 = 0;
-			while (i1 < a.Length && i2 < b.Length)
-			{
-				if (a[i1] == b[i2])
-				{
-					res.Add(a[i1]);
-					i1++;
-					i2++;
-				}
-				else if (a[i1] < b[i2])
-				{
-					res.Add(a[i1]);
-					i1++;
-				}
-				else
-				{
-					res.Add(b[i2]);
-					i2++;
-				}
-			}
-
-			return res.ToArray();
 		}
 	}
 
@@ -191,12 +187,13 @@ namespace HC19
 	{
 		public int SecondId;
 
-		public DoubleImg(int id, bool h, int[] tags) : base(id, h, tags)
+		public DoubleImg(int id, bool h, HashSet<int> tags) : base(id, h, tags)
 		{
 			SecondId = 0;
 		}
 
-		public DoubleImg(Img firstImage, Img secondImage) : base(firstImage.Id, false, TagUnion(firstImage.Tags, secondImage.Tags))
+		public DoubleImg(Img firstImage, Img secondImage) : base(firstImage.Id, false,
+			firstImage.Tags.Union(secondImage.Tags).ToHashSet())
 		{
 			SecondId = secondImage.Id;
 		}
@@ -237,25 +234,25 @@ namespace HC19
 
 			// filter out vertical images
 			var imgs = images.Imgs.Where(img => !img.H).ToList();
-			imgs.Sort((img1, img2) => img1.Tags.Length - img2.Tags.Length);
+			imgs.Sort((img1, img2) => img1.Tags.Count - img2.Tags.Count);
 
 			var imgsR = new List<Img>();
 
 			while (imgs.Count > 1)
 			{
 				Img img1 = imgs[0];
-				Img img2 = img1;
-				for(int i = 1; i < imgs.Count; i++)
+				Img img2 = imgs[1];
+				for (int i = imgs.Count - 1; i >= 1; i--)
 				{
 					int tagSum = CalcTagSum(img1, imgs[i]);
-					if(min <= tagSum && max >= tagSum)
+					if (min <= tagSum && max >= tagSum)
 					{
 						img2 = imgs[i];
 						break;
 					}
 				}
-				
-				DoubleImg di = new DoubleImg(img1, img2);
+
+				var di = new DoubleImg(img1, img2);
 				imgs.Remove(img1);
 				imgs.Remove(img2);
 				imgsR.Add(di);
@@ -267,8 +264,7 @@ namespace HC19
 
 		public static int CalcTagSum(Img img1, Img img2)
 		{
-			var tags = 0;
-			return 0;
+			return img1.Tags.Union(img2.Tags).Count();
 		}
 	}
 }

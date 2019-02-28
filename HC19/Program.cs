@@ -28,6 +28,7 @@ namespace HC19
 			Util.UnionVerticalImages(d, file);
 			Console.WriteLine("Vertical images combined");
 			ArrangeSlides(d);
+			Console.WriteLine("Slides Arranged");
 
 			int score = 0;
 			for (int i = 0; i < d.Imgs.Count - 1; i++)
@@ -47,6 +48,7 @@ namespace HC19
 			var groupedList = groupedImages.Select(x => (x.Key, x.ToList())).ToArray();
 			foreach (var (key, imgGroup) in groupedList)
 			{
+				Console.WriteLine("Arranging Group with #tags = " + key + ", Image Count: " + imgGroup.Count);
 				Img currentImg = null;
 				if (leftFromLastGroup == null)
 				{
@@ -55,7 +57,7 @@ namespace HC19
 				}
 				else
 				{
-					currentImg = leftFromLastGroup;					
+					currentImg = leftFromLastGroup;
 				}
 
 				while (imgGroup.Count > 1)
@@ -65,7 +67,7 @@ namespace HC19
 					int bestImageIndex = 0;
 					Img bestImage = null;
 					foreach (var (i, otherImg) in imgGroup.Select((i, j) => (j, i)))
-					{
+					{																			
 						int points = currentImg.PointsWith(otherImg);
 						if (points >= bestKeyPoints)
 						{
@@ -73,11 +75,20 @@ namespace HC19
 							bestImageIndex = i;
 							bestImage = otherImg;
 						}
+
+						if (bestKeyPoints >= (key / 2) - 8)
+						{
+							break;																												
+						}
 					}
 
 					slides.Add(currentImg);
 					imgGroup.RemoveAt(bestImageIndex);
 					currentImg = bestImage;
+					if (imgGroup.Count % 100 == 0)
+					{
+						Console.WriteLine("Found partner for image, left: " + imgGroup.Count);
+					}
 				}
 
 				// only one image from group should be left here
@@ -209,27 +220,27 @@ namespace HC19
 			int max = 0;
 			switch (file)
 			{
-			case "a_example.txt":
-				min = 1;
-				max = 3;
-				break;
-			case "b_lovely_landscapes.txt":
-				min = 15;
-				max = 30;
-				break;
-			case "c_memorable_moments.txt":
-				min = 7;
-				max = 14;
-				break;
-			case "d_pet_pictures.txt":
-				min = 5;
-				max = 17;
-				break;
-			case "e_shiny_selfies.txt":
-				min = 13;
-				max = 29;
-				break;
-			default: break;
+				case "a_example.txt":
+					min = 1;
+					max = 3;
+					break;
+				case "b_lovely_landscapes.txt":
+					min = 15;
+					max = 30;
+					break;
+				case "c_memorable_moments.txt":
+					min = 7;
+					max = 14;
+					break;
+				case "d_pet_pictures.txt":
+					min = 5;
+					max = 17;
+					break;
+				case "e_shiny_selfies.txt":
+					min = 13;
+					max = 29;
+					break;
+				default: break;
 			}
 
 			// filter out vertical images
@@ -241,7 +252,21 @@ namespace HC19
 			while (imgs.Count > 1)
 			{
 				Img img1 = imgs[0];
-				Img img2 = imgs[1];
+				int bestI = imgs.Count - 1;
+				int bestCount = CalcTagSum(img1, imgs[bestI]);
+				int tagCount = imgs[bestI].Tags.Count;
+				for (int i = bestI - 1; i > 0; i--)
+				{
+					var img = imgs[i];
+					if (img.Tags.Count != tagCount)
+						break;
+					var count = CalcTagSum(img1, img);
+					if (count > bestCount)
+					{
+						bestCount = count;
+						bestI = i;
+					}
+				}
 				/*
 				for (int i = imgs.Count - 1; i >= 1; i--)
 				{
@@ -253,9 +278,9 @@ namespace HC19
 					}
 				}*/
 
-				var di = new DoubleImg(img1, img2);
-				imgs.Remove(img1);
-				imgs.Remove(img2);
+				var di = new DoubleImg(img1, imgs[bestI]);
+				imgs.RemoveAt(bestI);
+				imgs.RemoveAt(0);
 				imgsR.Add(di);
 			}
 

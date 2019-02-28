@@ -8,8 +8,8 @@ namespace HC19
 {
 	internal class Program
 	{
-		// "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt",
-		private static string[] files = new[] {  "e_shiny_selfies.txt", };
+		// "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt"
+		private static string[] files = new[] { "d_pet_pictures.txt", };
 
 		private static void Main(string[] args)
 		{
@@ -83,15 +83,14 @@ namespace HC19
 
 					scoreSum -= cur;
 					scoreSum += swap;
+				}
 
+				if (++mod % 10000 == 0)
+				{
 					Console.WriteLine("Score:" + scoreSum);
-
-					if (++mod % 10000 == 0 )
-					{
-						mod = 0;
-						Console.WriteLine("Write");
-						WriteResult(d, file);
-					}
+					mod = 0;
+					Console.WriteLine("Write");
+					WriteResult(d, file);
 				}
 			}
 		}

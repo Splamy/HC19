@@ -67,7 +67,7 @@ namespace HC19
 					foreach (var (i, otherImg) in imgGroup.Select((i, j) => (j, i)))
 					{
 						int points = currentImg.PointsWith(otherImg);
-						if (points > bestKeyPoints)
+						if (points >= bestKeyPoints)
 						{
 							bestKeyPoints = points;
 							bestImageIndex = i;
@@ -242,6 +242,7 @@ namespace HC19
 			{
 				Img img1 = imgs[0];
 				Img img2 = imgs[1];
+				/*
 				for (int i = imgs.Count - 1; i >= 1; i--)
 				{
 					int tagSum = CalcTagSum(img1, imgs[i]);
@@ -250,7 +251,7 @@ namespace HC19
 						img2 = imgs[i];
 						break;
 					}
-				}
+				}*/
 
 				var di = new DoubleImg(img1, img2);
 				imgs.Remove(img1);

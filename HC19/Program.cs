@@ -1,22 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace HC19
 {
-	class Program
+	internal class Program
 	{
-		static string[] files = new[] { "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt", };
+		private static string[] files = new[] { "a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt", };
 
-		static void Main(string[] args)
+		private static void Main(string[] args)
 		{
 			foreach (var file in files)
 			{
-				ProcessFile( "../../../../Input/" + file);
+				Data data = ProcessFile("../../../../Input/" + file);
+				foreach (var imgs in data.Imgs.GroupBy(img => img.Tags.Length))
+				{
+					var ims = imgs.ToArray();
+					for (int i = 0; i < ims.Length; i++)
+					{
+						if (i % 100 == 0)
+							Console.WriteLine($"{i}/{ims.Length}");
+						for (int j = i + 1; j < ims.Length; j++)
+						{
+
+						}
+					}
+				}
 			}
 		}
 
-		static Data ProcessFile(string file)
+		private static Data ProcessFile(string file)
 		{
 			var tags = new Dictionary<string, int>();
 			using (var fs = File.OpenRead(file))
@@ -32,7 +46,7 @@ namespace HC19
 
 					for (int j = 0; j < itags.Length; j++)
 					{
-						if(!tags.TryGetValue(split[j + 2], out var itag))
+						if (!tags.TryGetValue(split[j + 2], out var itag))
 						{
 							itag = tags.Count;
 							tags.Add(split[j + 2], itag);
@@ -41,7 +55,7 @@ namespace HC19
 					}
 
 					Array.Sort(itags);
-					data.Add(new Img(split[0] == "H", itags));
+					data.Add(new Img(i, split[0] == "H", itags));
 				}
 
 				return new Data() { Imgs = data };
@@ -49,7 +63,7 @@ namespace HC19
 		}
 	}
 
-	class Data
+	internal class Data
 	{
 		public List<Img> Imgs;
 	}
@@ -58,11 +72,13 @@ namespace HC19
 	{
 		public bool H;
 		public int[] Tags;
+		public int Id;
 
-		public Img(bool h, int[] tags)
+		public Img(int id, bool h, int[] tags)
 		{
 			H = h;
 			Tags = tags;
+			Id = id;
 		}
 
 		public override string ToString() => (H ? "H" : "V") + " " + string.Join(",", Tags);
@@ -100,7 +116,7 @@ namespace HC19
 
 		public static int[] TagUnion(int[] a, int[] b)
 		{
-			List<int> res = new List<int>();
+			var res = new List<int>();
 			int i1 = 0;
 			int i2 = 0;
 			while (i1 < a.Length && i2 < b.Length)
@@ -124,6 +140,44 @@ namespace HC19
 			}
 
 			return res.ToArray();
+		}
+	}
+
+	internal static class Util
+	{
+		public static Data UnionVerticalImages(Data images)
+		{
+			// filter out vertical images
+			var imgs = images.Imgs.Where(img => !img.H).ToList();
+			imgs.Sort((img1, img2) => img1.Tags.Length - img2.Tags.Length);
+
+			Data unionedImages = new Data
+			{
+				Imgs = new List<Img>()
+			};
+
+			while (imgs.Count > 1)
+			{
+				Img img1 = imgs[0];
+				
+			}
+
+			return unionedImages;
+		}
+	}
+
+	public class DoubleImg : Img
+	{
+		public int SecondId;
+
+		public DoubleImg(int id, bool h, int[] tags) : base(id, h, tags)
+		{
+			SecondId = 0;
+		}
+
+		public DoubleImg(Img firstImage, Img secondImage) : base(firstImage.Id, false, TagUnion(firstImage.Tags, secondImage.Tags))
+		{
+			SecondId = secondImage.Id;
 		}
 	}
 }

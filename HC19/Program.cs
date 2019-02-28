@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -13,18 +14,57 @@ namespace HC19
 		{
 			foreach (var file in files)
 			{
+				Console.WriteLine("Doing: " + file);
 				Data data = ProcessFile("../../../../Input/" + file);
-				foreach (var imgs in data.Imgs.GroupBy(img => img.Tags.Length))
-				{
-					var ims = imgs.ToArray();
-					for (int i = 0; i < ims.Length; i++)
-					{
-						if (i % 100 == 0)
-							Console.WriteLine($"{i}/{ims.Length}");
-						for (int j = i + 1; j < ims.Length; j++)
-						{
 
-						}
+				Do(data, file);
+
+				WriteResult(data, file);
+			}
+		}
+
+		public static void Do(Data d, string file)
+		{
+			Util.UnionVerticalImages(d, file);
+			d.Imgs.Sort((i, j) => i.Tags.Length - j.Tags.Length);
+
+			int score = 0;
+			for (int i = 0; i < d.Imgs.Count - 1; i++)
+			{
+				score += d.Imgs[i].PointsWith(d.Imgs[i + 1]);
+			}
+			Console.WriteLine($"Score: {score}");
+		}
+
+		private static void ArrangeSlides(Data d)
+		{
+			List<Img> slides = new List<Img>();
+			var groupedImages = d.Imgs.GroupBy(img => img.Tags.Length).ToList();
+			groupedImages.Sort((g1, g2) => g1.Key - g2.Key);
+
+			Img leftFromLastGroup = null;			
+			foreach (IGrouping<int, Img> imgGroup in groupedImages)
+			{
+				Img currentImg = imgGroup.First();
+				// find image that has at least key / 2
+				int bestKeyCount = 0;
+				
+			}			
+		}
+
+		private static void WriteResult(Data d, string file)
+		{
+			if (!Directory.Exists("../../../../Output/"))
+				Directory.CreateDirectory("../../../../Output/");
+
+			using (var fs = File.Open("../../../../Output/" + file, FileMode.Create, FileAccess.Write))
+			{
+				using (var s = new StreamWriter(fs))
+				{
+					s.WriteLine(d.Imgs.Count);
+					foreach (Img i in d.Imgs)
+					{
+						s.WriteLine(i.WriteAsSlide());
 					}
 				}
 			}
@@ -70,18 +110,20 @@ namespace HC19
 
 	public class Img
 	{
+		public int Id;
 		public bool H;
 		public int[] Tags;
-		public int Id;
 
 		public Img(int id, bool h, int[] tags)
 		{
+			Id = id;
 			H = h;
 			Tags = tags;
-			Id = id;
 		}
 
 		public override string ToString() => (H ? "H" : "V") + " " + string.Join(",", Tags);
+
+		public virtual string WriteAsSlide() => Id.ToString(CultureInfo.InvariantCulture);
 
 		public int PointsWith(Img i)
 		{
@@ -110,6 +152,8 @@ namespace HC19
 					i2++;
 				}
 			}
+			only1 += Tags.Length - i1;
+			only2 += i.Tags.Length - i2;
 
 			return Math.Min(Math.Min(common, only1), only2);
 		}
@@ -134,35 +178,12 @@ namespace HC19
 				}
 				else
 				{
-					res.Add(a[i2]);
+					res.Add(b[i2]);
 					i2++;
 				}
 			}
 
 			return res.ToArray();
-		}
-	}
-
-	internal static class Util
-	{
-		public static Data UnionVerticalImages(Data images)
-		{
-			// filter out vertical images
-			var imgs = images.Imgs.Where(img => !img.H).ToList();
-			imgs.Sort((img1, img2) => img1.Tags.Length - img2.Tags.Length);
-
-			Data unionedImages = new Data
-			{
-				Imgs = new List<Img>()
-			};
-
-			while (imgs.Count > 1)
-			{
-				Img img1 = imgs[0];
-				
-			}
-
-			return unionedImages;
 		}
 	}
 
@@ -178,6 +199,76 @@ namespace HC19
 		public DoubleImg(Img firstImage, Img secondImage) : base(firstImage.Id, false, TagUnion(firstImage.Tags, secondImage.Tags))
 		{
 			SecondId = secondImage.Id;
+		}
+
+		public override string WriteAsSlide() => Id + " " + SecondId;
+	}
+
+	internal static class Util
+	{
+		public static void UnionVerticalImages(Data images, string file)
+		{
+			int min = 0;
+			int max = 0;
+			switch (file)
+			{
+			case "a_example.txt":
+				min = 1;
+				max = 3;
+				break;
+			case "b_lovely_landscapes.txt":
+				min = 15;
+				max = 30;
+				break;
+			case "c_memorable_moments.txt":
+				min = 7;
+				max = 14;
+				break;
+			case "d_pet_pictures.txt":
+				min = 5;
+				max = 17;
+				break;
+			case "e_shiny_selfies.txt":
+				min = 13;
+				max = 29;
+				break;
+			default: break;
+			}
+
+			// filter out vertical images
+			var imgs = images.Imgs.Where(img => !img.H).ToList();
+			imgs.Sort((img1, img2) => img1.Tags.Length - img2.Tags.Length);
+
+			var imgsR = new List<Img>();
+
+			while (imgs.Count > 1)
+			{
+				Img img1 = imgs[0];
+				Img img2 = img1;
+				for(int i = 1; i < imgs.Count; i++)
+				{
+					int tagSum = CalcTagSum(img1, imgs[i]);
+					if(min <= tagSum && max >= tagSum)
+					{
+						img2 = imgs[i];
+						break;
+					}
+				}
+				
+				DoubleImg di = new DoubleImg(img1, img2);
+				imgs.Remove(img1);
+				imgs.Remove(img2);
+				imgsR.Add(di);
+			}
+
+			imgsR.AddRange(images.Imgs.Where(img => img.H));
+			images.Imgs = imgsR;
+		}
+
+		public static int CalcTagSum(Img img1, Img img2)
+		{
+			var tags = 0;
+			return 0;
 		}
 	}
 }

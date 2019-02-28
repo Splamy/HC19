@@ -66,5 +66,64 @@ namespace HC19
 		}
 
 		public override string ToString() => (H ? "H" : "V") + " " + string.Join(",", Tags);
+
+		public int PointsWith(Img i)
+		{
+			int common = 0;
+			int only1 = 0;
+			int only2 = 0;
+
+			int i1 = 0;
+			int i2 = 0;
+			while (i1 < Tags.Length && i2 < i.Tags.Length)
+			{
+				if (Tags[i1] == i.Tags[i2])
+				{
+					common++;
+					i1++;
+					i2++;
+				}
+				else if (Tags[i1] < i.Tags[i2])
+				{
+					only1++;
+					i1++;
+				}
+				else// if (Tags[i1] > i.Tags[i2])
+				{
+					only2++;
+					i2++;
+				}
+			}
+
+			return Math.Min(Math.Min(common, only1), only2);
+		}
+
+		public static int[] TagUnion(int[] a, int[] b)
+		{
+			List<int> res = new List<int>();
+			int i1 = 0;
+			int i2 = 0;
+			while (i1 < a.Length && i2 < b.Length)
+			{
+				if (a[i1] == b[i2])
+				{
+					res.Add(a[i1]);
+					i1++;
+					i2++;
+				}
+				else if (a[i1] < b[i2])
+				{
+					res.Add(a[i1]);
+					i1++;
+				}
+				else
+				{
+					res.Add(a[i2]);
+					i2++;
+				}
+			}
+
+			return res.ToArray();
+		}
 	}
 }
